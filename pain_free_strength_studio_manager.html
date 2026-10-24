@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pain Free Strength — Studio Manager</title>
+<style>
+:root{--ink:#172b2a;--muted:#647472;--brand:#245b50;--mint:#e9f2ee;--paper:#f6f8f7;--line:#dce5e1;--white:#fff;--amber:#fff3d9;--red:#fde9e7}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:var(--ink);color:white;padding:22px max(18px,calc((100vw - 1180px)/2));display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+.brand{font-size:20px;font-weight:750;letter-spacing:.2px}.sub{color:#c7d8d2;font-size:13px}
+main{max-width:1180px;margin:22px auto;padding:0 18px 40px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}.tab,button{border:1px solid var(--line);border-radius:10px;padding:10px 13px;background:white;color:var(--ink);font:inherit;cursor:pointer}.tab.active,.primary{background:var(--brand);border-color:var(--brand);color:white}.danger{color:#9a2c26}.layout{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}.card{background:white;border:1px solid var(--line);border-radius:15px;padding:18px;min-width:0}.span12{grid-column:span 12}.span8{grid-column:span 8}.span6{grid-column:span 6}.span4{grid-column:span 4}.span3{grid-column:span 3}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:18px;margin:0 0 14px}p{margin:6px 0 12px}.muted{color:var(--muted)}.stat{font-size:28px;font-weight:750;margin-top:4px}.statlabel{font-size:13px;color:var(--muted)}
+form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}input,select,textarea{font:inherit;padding:10px;border:1px solid #cbd8d2;border-radius:9px;background:white;color:var(--ink);width:100%}textarea{min-height:86px;resize:vertical}.full{grid-column:1/-1}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;min-width:620px}th,td{text-align:left;padding:11px 9px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}.pill{display:inline-block;padding:3px 8px;border-radius:99px;background:var(--mint);font-size:12px}.pill.due{background:var(--amber)}.pill.overdue{background:var(--red)}.empty{padding:20px;color:var(--muted);text-align:center}.sectionhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}.notice{background:#fff8e9;border:1px solid #f1dfb4;padding:12px 14px;border-radius:11px;font-size:13px;margin-bottom:16px}.hidden{display:none!important}.small{font-size:12px}.clientrow{cursor:pointer}.clientrow:hover{background:#f7faf8}
+@media(max-width:760px){.span8,.span6,.span4,.span3{grid-column:span 12}form{grid-template-columns:1fr}header{padding:18px}.stat{font-size:24px}}
+</style></head>
+<body>
+<header><div><div class="brand">PAIN FREE STRENGTH</div><div class="sub">Studio manager · South Molton</div></div><div class="sub">Bookings · Clients · Assessments · BACS invoices</div></header>
+<main>
+<div class="notice"><strong>Prototype / privacy note:</strong> this version saves data only in this browser on this device. It has no cloud sync, user accounts, secure clinical-data hosting, automated email or backups. Use fictional test data only until a secure production setup is arranged. Export backups regularly.</div>
+<nav id="nav">
+<button class="tab active" data-view="dashboard">Dashboard</button><button class="tab" data-view="bookings">Bookings</button><button class="tab" data-view="clients">Clients</button><button class="tab" data-view="invoices">Invoices & BACS</button><button class="tab" data-view="assessments">Movement assessments</button><button class="tab" data-view="forms">Consultation forms</button>
+</nav>
+<section id="dashboard" class="view">
+<div class="sectionhead"><div><h1>Today's overview</h1><div class="muted" id="todayText"></div></div><button class="primary" onclick="showView('bookings')">＋ Add booking</button></div>
+<div class="layout">
+<div class="card span3"><div class="statlabel">Bookings today</div><div class="stat" id="statBookings">0</div></div>
+<div class="card span3"><div class="statlabel">Active clients</div><div class="stat" id="statClients">0</div></div>
+<div class="card span3"><div class="statlabel">Invoices outstanding</div><div class="stat" id="statDue">£0.00</div></div>
+<div class="card span3"><div class="statlabel">Forms to review</div><div class="stat" id="statForms">0</div></div>
+<div class="card span8"><h2>Today's bookings</h2><div id="todayBookings"></div></div>
+<div class="card span4"><h2>Payment follow-up</h2><div id="dueList"></div></div>
+<div class="card span12"><h2>Quick start</h2><p class="muted">Add a client first, then create their booking, consultation record, movement assessment or invoice. All sections share the same client list.</p><div class="actions"><button onclick="showView('clients')">＋ Add client</button><button onclick="showView('invoices')">＋ Create invoice</button><button onclick="exportData()">Export backup (JSON)</button><button onclick="document.getElementById('importFile').click()">Import backup</button><input id="importFile" class="hidden" type="file" accept=".json" onchange="importData(event)"></div></div>
+</div></section>
+<section id="bookings" class="view hidden">
+<div class="sectionhead"><div><h1>Bookings</h1><div class="muted">Create and review appointments.</div></div></div>
+<div class="layout"><div class="card span4"><h2>Add booking</h2><form id="bookingForm">
+<label class="full">Client<select name="clientId" id="bookingClient" required></select></label>
+<label>Date<input type="date" name="date" required></label><label>Time<input type="time" name="time" required></label>
+<label>Appointment type<select name="type"><option>Initial consultation</option><option>Movement assessment</option><option>Strength session</option><option>Rehab session</option><option>Mobility session</option><option>Review / reassessment</option><option>Other</option></select></label>
+<label>Duration (minutes)<input type="number" name="duration" min="10" step="5" value="60"></label>
+<label>Status<select name="status"><option>Booked</option><option>Completed</option><option>Cancelled</option><option>No-show</option></select></label>
+<label class="full">Session notes<textarea name="notes" placeholder="Brief admin notes only"></textarea></label>
+<div class="full actions"><button class="primary">Save booking</button></div></form></div>
+<div class="card span8"><div class="sectionhead"><h2>Appointment list</h2><input style="max-width:210px" type="date" id="bookingFilter" aria-label="Filter bookings by date"></div><div class="scroll" id="bookingTable"></div></div></div>
+</section>
+<section id="clients" class="view hidden">
+<div class="layout"><div class="card span4"><h1>Clients</h1><p class="muted">Keep each client's details in one record.</p><form id="clientForm">
+<label>First name<input name="first" required></label><label>Last name<input name="last" required></label><label>Email<input name="email" type="email"></label><label>Phone<input name="phone" type="tel"></label>
+<label class="full">Emergency contact (name / phone)<input name="emergency"></label><label class="full">Client status<select name="status"><option>Active</option><option>On hold</option><option>Archived</option></select></label>
+<label class="full">General admin notes<textarea name="notes" placeholder="Avoid unnecessary sensitive details in this prototype"></textarea></label><div class="full actions"><button class="primary">Save client</button></div></form></div>
+<div class="card span8"><h2>Client directory</h2><div class="scroll" id="clientTable"></div></div></div>
+</section>
+<section id="invoices" class="view hidden">
+<div class="layout"><div class="card span4"><h1>Invoices & BACS</h1><p class="muted">Create an invoice, add bank details and manually mark it paid when the transfer arrives.</p><form id="invoiceForm">
+<label class="full">Client<select name="clientId" id="invoiceClient" required></select></label><label>Invoice date<input name="date" type="date" required></label><label>Due date<input name="due" type="date" required></label>
+<label class="full">Description<input name="description" placeholder="e.g. 60-minute rehab session" required></label><label>Amount (£)<input name="amount" type="number" min="0" step=".01" required></label><label>Status<select name="status"><option>Unpaid</option><option>Paid</option><option>Part-paid</option><option>Void</option></select></label>
+<label class="full">Business name<input name="business" value="Pain Free Strength"></label><label class="full">Bank payment reference<input name="reference" placeholder="e.g. invoice number"></label>
+<label class="full">Sort code<input name="sort" placeholder="Enter your business sort code"></label><label class="full">Account number<input name="account" placeholder="Enter your business account number"></label>
+<div class="full actions"><button class="primary">Create invoice</button></div></form><p class="small muted">Bank details are stored locally in this browser with the rest of this prototype's data.</p></div>
+<div class="card span8"><h2>Invoice register</h2><div class="scroll" id="invoiceTable"></div><div class="actions"><button onclick="printInvoices()">Print / save invoices as PDF</button></div></div></div>
+</section>
+<section id="assessments" class="view hidden">
+<div class="layout"><div class="card span5"><h1>Movement assessments</h1><p class="muted">Record baseline observations and repeat assessments over time.</p><form id="assessmentForm">
+<label class="full">Client<select name="clientId" id="assessmentClient" required></select></label><label>Date<input type="date" name="date" required></label><label>Assessment type<select name="type"><option>Initial</option><option>Reassessment</option><option>Progress review</option></select></label>
+<label class="full">Movement / test assessed<input name="movement" placeholder="e.g. squat, ankle dorsiflexion, shoulder flexion" required></label><label>Result / measurement<input name="result" placeholder="Value and units"></label><label>Side<select name="side"><option>Both</option><option>Left</option><option>Right</option><option>N/A</option></select></label>
+<label class="full">Observations<textarea name="observations"></textarea></label><label class="full">Next steps<textarea name="nextSteps"></textarea></label><div class="full actions"><button class="primary">Save assessment</button></div></form></div>
+<div class="card span7"><h2>Assessment history</h2><div class="scroll" id="assessmentTable"></div></div></div>
+</section>
+<section id="forms" class="view hidden">
+<div class="layout"><div class="card span5"><h1>Consultation forms</h1><p class="muted">Prototype record for consultation completion and consent. Do not collect real health data in this local-only version.</p><form id="formForm">
+<label class="full">Client<select name="clientId" id="formClient" required></select></label><label>Date completed<input type="date" name="date" required></label><label>Form status<select name="status"><option>Needs review</option><option>Complete</option><option>Follow-up needed</option></select></label>
+<label class="full">Main goals<textarea name="goals" placeholder="Client's stated goals"></textarea></label><label class="full">Relevant history / limitations<textarea name="history" placeholder="Only record information needed for care"></textarea></label>
+<label class="full">Consent status<select name="consent"><option>Not recorded</option><option>Consent recorded</option><option>Further discussion needed</option></select></label><label class="full">Notes<textarea name="notes"></textarea></label><div class="full actions"><button class="primary">Save consultation record</button></div></form></div>
+<div class="card span7"><h2>Consultation records</h2><div class="scroll" id="formTable"></div></div></div>
+</section>
+</main>
+<script>
+const KEY='pfs_studio_manager_v1';
+let db=load();
+function blank(){return {clients:[],bookings:[],invoices:[],assessments:[],forms:[],next:{client:1,booking:1,invoice:1,assessment:1,form:1}}}
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||blank()}catch(e){return blank()}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function money(n){return new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP'}).format(Number(n)||0)}
+function today(){return new Date().toISOString().slice(0,10)}
+function clientName(id){let c=db.clients.find(x=>x.id===Number(id));return c?c.first+' '+c.last:'Unknown client'}
+function options(id){return '<option value="">Choose a client…</option>'+db.clients.filter(c=>c.status!=='Archived').map(c=>`<option value="${c.id}" ${Number(id)===c.id?'selected':''}>${esc(c.first+' '+c.last)}</option>`).join('')}
+function refreshSelects(){['bookingClient','invoiceClient','assessmentClient','formClient'].forEach(id=>{let el=document.getElementById(id),v=el.value;el.innerHTML=options(v)})}
+function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==id));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===id));window.scrollTo({top:0,behavior:'smooth'});render()}
+document.getElementById('nav').addEventListener('click',e=>{let b=e.target.closest('[data-view]');if(b)showView(b.dataset.view)});
+function table(headers,rows){if(!rows.length)return '<div class="empty">Nothing here yet.</div>';return '<table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table>'}
+function render(){
+refreshSelects();document.getElementById('todayText').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+let todays=db.bookings.filter(b=>b.date===today()&&b.status!=='Cancelled').sort((a,b)=>a.time.localeCompare(b.time));
+document.getElementById('statBookings').textContent=todays.length;document.getElementById('statClients').textContent=db.clients.filter(c=>c.status==='Active').length;
+let due=db.invoices.filter(i=>['Unpaid','Part-paid'].includes(i.status));document.getElementById('statDue').textContent=money(due.reduce((s,i)=>s+Number(i.amount||0),0));document.getElementById('statForms').textContent=db.forms.filter(f=>f.status!=='Complete').length;
+document.getElementById('todayBookings').innerHTML=table(['Time','Client','Appointment','Status'],todays.map(b=>`<tr><td>${esc(b.time)}</td><td>${esc(clientName(b.clientId))}</td><td>${esc(b.type)}</td><td><span class="pill">${esc(b.status)}</span></td></tr>`));
+document.getElementById('dueList').innerHTML=due.length?due.slice(0,6).map(i=>`<p><strong>${esc(clientName(i.clientId))}</strong><br><span class="muted">${esc(i.description)} · ${money(i.amount)}</span><br><span class="pill due">${esc(i.status)}</span></p>`).join(''):'<div class="empty">No unpaid invoices recorded.</div>';
+let bf=document.getElementById('bookingFilter'),filter=bf.value||today();document.getElementById('bookingTable').innerHTML=table(['Date / time','Client','Type','Duration','Status','Notes'],db.bookings.filter(b=>!filter||b.date===filter).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).map(b=>`<tr><td>${esc(b.date)}<br>${esc(b.time)}</td><td>${esc(clientName(b.clientId))}</td><td>${esc(b.type)}</td><td>${esc(b.duration)} min</td><td><select onchange="updateStatus('bookings',${b.id},this.value)">${['Booked','Completed','Cancelled','No-show'].map(s=>`<option ${b.status===s?'selected':''}>${s}</option>`).join('')}</select></td><td>${esc(b.notes)}</td></tr>`));
+document.getElementById('clientTable').innerHTML=table(['Client','Contact','Status','Actions'],db.clients.map(c=>`<tr class="clientrow"><td><strong>${esc(c.first+' '+c.last)}</strong><br><span class="muted small">${esc(c.notes)}</span></td><td>${esc(c.email)}<br>${esc(c.phone)}</td><td><span class="pill">${esc(c.status)}</span></td><td><button onclick="archiveClient(${c.id})">Archive</button></td></tr>`));
+document.getElementById('invoiceTable').innerHTML=table(['Invoice','Client','Due','Amount','Status','Actions'],db.invoices.map(i=>`<tr><td><strong>${esc(i.number)}</strong><br>${esc(i.description)}<br><span class="muted small">${esc(i.business)} · Ref ${esc(i.reference||i.number)}</span><br><span class="small">Sort: ${esc(i.sort||'not entered')} · Account: ${esc(i.account||'not entered')}</span></td><td>${esc(clientName(i.clientId))}</td><td>${esc(i.due)}</td><td>${money(i.amount)}</td><td><span class="pill ${i.status==='Paid'?'':i.status==='Void'?'overdue':'due'}">${esc(i.status)}</span></td><td><select onchange="updateStatus('invoices',${i.id},this.value)">${['Unpaid','Part-paid','Paid','Void'].map(s=>`<option ${i.status===s?'selected':''}>${s}</option>`).join('')}</select><br><button onclick="printInvoice(${i.id})">Print invoice</button></td></tr>`));
+document.getElementById('assessmentTable').innerHTML=table(['Date','Client','Type / movement','Result','Observations / next steps'],db.assessments.slice().reverse().map(a=>`<tr><td>${esc(a.date)}</td><td>${esc(clientName(a.clientId))}</td><td>${esc(a.type)}<br>${esc(a.movement)} (${esc(a.side)})</td><td>${esc(a.result)}</td><td>${esc(a.observations)}<br><span class="muted">${esc(a.nextSteps)}</span></td></tr>`));
+document.getElementById('formTable').innerHTML=table(['Date','Client','Status','Consent','Goals / notes'],db.forms.slice().reverse().map(f=>`<tr><td>${esc(f.date)}</td><td>${esc(clientName(f.clientId))}</td><td><select onchange="updateStatus('forms',${f.id},this.value)">${['Needs review','Complete','Follow-up needed'].map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('')}</select></td><td>${esc(f.consent)}</td><td>${esc(f.goals)}<br>${esc(f.notes)}</td></tr>`));
+}
+function handleForm(formId,collection,prefix,transform){document.getElementById(formId).addEventListener('submit',e=>{e.preventDefault();let o=Object.fromEntries(new FormData(e.target).entries());if(!o.clientId||!db.clients.some(c=>c.id===Number(o.clientId))){alert('Please add/select a client first.');return}o=transform?transform(o):o;o.id=db.next[prefix]++;db[collection].push(o);save();e.target.reset();if(o.date&&e.target.elements.date)e.target.elements.date.value=today();alert('Saved in this browser. Export a backup regularly.');})}
+handleForm('clientForm','clients','client',o=>({...o,created:today()}));
+handleForm('bookingForm','bookings','booking',o=>({...o,clientId:Number(o.clientId),duration:Number(o.duration||60)}));
+handleForm('invoiceForm','invoices','invoice',o=>({...o,clientId:Number(o.clientId),amount:Number(o.amount),number:'PFS-'+String(db.next.invoice).padStart(4,'0')}));
+handleForm('assessmentForm','assessments','assessment',o=>({...o,clientId:Number(o.clientId)}));
+handleForm('formForm','forms','form',o=>({...o,clientId:Number(o.clientId)}));
+function updateStatus(col,id,status){let item=db[col].find(x=>x.id===id);if(item){item.status=status;save()}}
+function archiveClient(id){if(confirm('Archive this client? Their records will be kept.')){let c=db.clients.find(x=>x.id===id);if(c)c.status='Archived';save()}}
+document.getElementById('bookingFilter').value=today();document.getElementById('bookingFilter').addEventListener('change',render);
+function exportData(){let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pain-free-strength-backup-'+today()+'.json';a.click();URL.revokeObjectURL(a.href)}
+function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!d.clients||!d.bookings||!d.invoices)throw Error();if(confirm('Replace current local data with this backup?')){db=d;save();alert('Backup imported.')}}catch(err){alert('That file does not look like a valid studio backup.')}e.target.value=''};r.readAsText(f)}
+function printInvoice(id){let i=db.invoices.find(x=>x.id===id);if(!i)return;let c=db.clients.find(x=>x.id===i.clientId)||{};let w=window.open('','_blank');if(!w){alert('Allow pop-ups to print the invoice.');return}w.document.write(`<html><head><title>${esc(i.number)}</title><style>body{font:16px Arial;max-width:760px;margin:50px auto;color:#172b2a}h1{font-size:28px}hr{border:0;border-top:1px solid #ddd;margin:24px 0}.amount{font-size:24px;font-weight:bold}.muted{color:#666}</style></head><body><h1>${esc(i.business||'Pain Free Strength')}</h1><h2>INVOICE ${esc(i.number)}</h2><p>Bill to: <strong>${esc((c.first||'')+' '+(c.last||''))}</strong><br>${esc(c.email||'')}</p><p>Invoice date: ${esc(i.date)}<br>Due date: ${esc(i.due)}</p><hr><p>${esc(i.description)}</p><p class="amount">${money(i.amount)}</p><hr><h3>Payment by bank transfer (BACS)</h3><p>Sort code: ${esc(i.sort||'Please contact the studio')}<br>Account number: ${esc(i.account||'Please contact the studio')}<br>Payment reference: ${esc(i.reference||i.number)}</p><p class="muted">Please use the invoice number as your payment reference.</p><script>window.onload=()=>window.print()<\\/script></body></html>`);w.document.close()}
+function printInvoices(){alert('Use the Print invoice button on the specific invoice to print or save it as PDF.')}
+render();
+</script></body></html>
